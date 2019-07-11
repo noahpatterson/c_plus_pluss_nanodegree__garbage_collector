@@ -89,6 +89,7 @@ public:
     static void showlist();
     // Clear refContainer when program exits.
     static void shutdown();
+    void swap(Pointer<T, size> &first, Pointer<T, size> &second);
 };
 
 // STATIC INITIALIZATION
@@ -106,8 +107,6 @@ Pointer<T,size>::Pointer(T *t){
         atexit(shutdown);
     first = false;
 
-    // TODO: Implement Pointer constructor
-    // Lab: Smart Pointer Project Lab
     addr = t;
     isArray = false;
     arraySize = 0;
@@ -120,7 +119,6 @@ Pointer<T,size>::Pointer(const Pointer &ob){
 	typename std::list<PtrDetails<T> >::iterator p;
     p = findPtrInfo(ob.addr);
 	
-    // TODO: Implement Pointer constructor
     addr = ob.addr;
     arraySize = ob.arraySize; // size of the array
     if (arraySize > 0) {
@@ -137,8 +135,6 @@ Pointer<T, size>::~Pointer(){
     typename std::list<PtrDetails<T> >::iterator p;
     p = findPtrInfo(addr);
     
-    // TODO: Finalize Pointer destructor
-    // decrement ref count
     if (p->refcount) {
     	p->refcount--;
     }
@@ -179,10 +175,28 @@ bool Pointer<T, size>::collect(){
     return memfreed;
 }
 
+template<class T, int size>
+void Pointer<T, size>::swap(Pointer<T, size> &first, Pointer<T, size> &second) {
+  // enable ADL . Nice link on ADL https://en.cppreference.com/w/cpp/language/adl
+  using std::swap;
+
+  std::swap(first.addr, second.addr);
+  std::swap(first.isArray, second.isArray);
+  std::swap(first.arraySize, second.arraySize);
+}
+
 // Overload assignment of pointer to Pointer.
 template <class T, int size>
 T *Pointer<T, size>::operator=(T *t){
-   return Pointer(t);
+   
+   //alternate suggested implementation
+   //Questions for reviewer:
+   //1. I understand that std::swap is swapping values between the left side object and the right side object, however
+   //   I don't quite understand why `t` is being returned?
+   //2. I also am not sure how you'd implement this without `std::swp`, i've tried a number of different things and they all lead to leaks. Is there another explanation of what this Assignment Overload is trying to do? Thanks for the help.
+   Pointer<T, size> temp(t);
+   swap(*this, temp);
+   return t;
 }
 
 // Overload assignment of Pointer to Pointer.
@@ -190,7 +204,7 @@ template <class T, int size>
 Pointer<T, size> &Pointer<T, size>::operator=(Pointer &rv){
 	typename std::list<PtrDetails<T> >::iterator p;
     p = findPtrInfo(addr);
-    // TODO: Implement assignment
+
     // First, decrement the reference count
     // for the memory currently being pointed to.
     p->refcount--;
